@@ -24,9 +24,8 @@ sudo pacman -S --needed zsh zsh-syntax-highlighting zsh-autosuggestions zsh-hist
 # Hardware & Multimedia
 sudo pacman -S --needed pipewire wireplumber pavucontrol brightnessctl playerctl networkmanager blueman power-profiles-daemon
 
-## ✅ Pós-instalação
+✅ Pós-instalação
 
-```bash
 # Habilitar serviços
 sudo systemctl enable --now NetworkManager bluetooth
 
