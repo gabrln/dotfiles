@@ -43,7 +43,7 @@ services:
     container_name: playit-tunnel
     restart: unless-stopped
     environment:
-      - SECRET_KEY=e01f074ead982ed5e7e6f4adbd49a7fe2f522484da1b037d4a907cd5835c2995
+      - SECRET_KEY=
     networks:
       - network-games
       - network-playit
