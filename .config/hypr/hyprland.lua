@@ -76,7 +76,7 @@ hl.config({
 		touchpad = { natural_scroll = true, disable_while_typing = true, tap_to_click = true },
 	},
 	misc = { disable_hyprland_logo = true, focus_on_activate = false },
-	cursor = { no_warps = true },
+	cursor = { no_warps = true, inactive_timeout = 3, hide_on_key_press = true },
 })
 
 -- -----------------------------------------------------------------------------
@@ -161,17 +161,42 @@ local ipc = "noctalia msg"
 local scriptsDir = "/home/gsouza/.config/hypr/scripts"
 
 -- --- Application Launchers ---
+-- --- Application Launchers ---
 hl.bind(mainMod .. " + return", hl.dsp.exec_raw("kitty --title Kitty"))
 hl.bind(mainMod .. " + b", hl.dsp.exec_cmd(browser))
 hl.bind(mainMod .. " + h", hl.dsp.exec_cmd(scriptsDir .. "/KeyHints.sh"))
+hl.bind(mainMod .. " + d", hl.dsp.exec_cmd(ipc .. " panel-toggle launcher"))
+hl.bind(mainMod .. " + SHIFT + e", hl.dsp.exec_cmd(ipc .. " settings-toggle"))
+hl.bind(mainMod .. " + e", hl.dsp.exec_raw("kitty -e yazi"))
+hl.bind(mainMod .. " + SHIFT + d", hl.dsp.exec_cmd(scriptsDir .. "/WindowInfo.sh"))
 
 -- --- Window Management ---
 hl.bind(mainMod .. " + q", hl.dsp.window.close(), { repeating = true })
 hl.bind("ALT + F4", hl.dsp.window.close(), { repeating = true })
 hl.bind(mainMod .. " + SHIFT + q", hl.dsp.window.kill())
-hl.bind(mainMod .. " + f", hl.dsp.window.fullscreen({ mode = "fullscreen", action = "toggle" }))
+hl.bind(mainMod .. " + SHIFT + f", hl.dsp.window.fullscreen({ mode = "fullscreen", action = "toggle" }))
 hl.bind(mainMod .. " + m", hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" }))
-hl.bind(mainMod .. " + SHIFT + f", hl.dsp.window.float({ action = "toggle" }))
+hl.bind(mainMod .. " + space", function()
+	local w = hl.get_active_window()
+	if not w then return end
+	if w.floating then
+		hl.dispatch(hl.dsp.window.float({ action = "toggle" }))
+	else
+		hl.dispatch(hl.dsp.window.float({ action = "toggle" }))
+		hl.exec_cmd("hyprctl --batch 'dispatch resizeactive exact 1200 800 ; dispatch centerwindow'")
+	end
+end)
+hl.bind(mainMod .. " + ALT + space", function()
+	local active_w = hl.get_active_window()
+	if not active_w then return end
+	local active_ws = active_w.workspace.name
+	local windows = hl.get_windows()
+	for _, win in ipairs(windows) do
+		if win.workspace.name == active_ws then
+			hl.exec_cmd("hyprctl dispatch togglefloating address:" .. win.address)
+		end
+	end
+end)
 hl.bind(mainMod .. " + o", function()
 	local w = hl.get_active_window()
 	if w then
@@ -179,14 +204,27 @@ hl.bind(mainMod .. " + o", function()
 		hl.dispatch(hl.dsp.window.pin())
 	end
 end)
-hl.bind(mainMod .. " + j", hl.dsp.layout("togglesplit"))
+hl.bind(mainMod .. " + SHIFT + i", hl.dsp.layout("togglesplit"))
 
 -- --- Focus & Navigation ---
+-- Directional Arrow Keys
 for _, dir in ipairs({ "left", "right", "up", "down" }) do
 	hl.bind(mainMod .. " + " .. dir, hl.dsp.focus({ direction = dir }))
-	hl.bind(mainMod .. " + SHIFT + " .. dir, hl.dsp.window.move({ direction = dir }))
+	hl.bind(mainMod .. " + CTRL + " .. dir, hl.dsp.window.move({ direction = dir }))
 end
 
+-- Resize active window via SUPER + SHIFT + Arrow keys
+local resize_dirs = {
+	left = { x = -50, y = 0 },
+	right = { x = 50, y = 0 },
+	up = { x = 0, y = -50 },
+	down = { x = 0, y = 50 },
+}
+for dir, val in pairs(resize_dirs) do
+	hl.bind(mainMod .. " + SHIFT + " .. dir, hl.dsp.window.resize({ x = val.x, y = val.y, relative = true }), { repeating = true })
+end
+
+-- Workspaces
 for i = 1, 10 do
 	local key = i % 10
 	hl.bind(mainMod .. " + " .. key, hl.dsp.focus({ workspace = i }))
@@ -197,6 +235,9 @@ end
 hl.bind(mainMod .. " + TAB", hl.dsp.focus({ workspace = "e+1" }))
 hl.bind(mainMod .. " + SHIFT + TAB", hl.dsp.focus({ workspace = "e-1" }))
 
+-- --- Window Switcher (Snappy Switcher) ---
+hl.bind("ALT + Tab", hl.dsp.exec_cmd("snappy-switcher next --mod alt"))
+
 -- --- Mouse Bindings ---
 -- Inverted scroll direction: Up -> Prev (e-1), Down -> Next (e+1)
 hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e-1" }))
@@ -204,14 +245,12 @@ hl.bind(mainMod .. " + mouse_up", hl.dsp.focus({ workspace = "e+1" }))
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
--- --- Window Resizing ---
--- Omarchy style (Equal/Minus)
+-- --- Window Resizing (Omarchy keys & ALT+Arrows fallback) ---
 hl.bind(mainMod .. " + equal", hl.dsp.window.resize({ x = 50, y = 0, relative = true }), { repeating = true })
 hl.bind(mainMod .. " + minus", hl.dsp.window.resize({ x = -50, y = 0, relative = true }), { repeating = true })
 hl.bind(mainMod .. " + SHIFT + equal", hl.dsp.window.resize({ x = 0, y = -50, relative = true }), { repeating = true })
 hl.bind(mainMod .. " + SHIFT + minus", hl.dsp.window.resize({ x = 0, y = 50, relative = true }), { repeating = true })
 
--- Alternative (ALT + Arrow Keys)
 local resize_maps = {
 	{ key = "left", x = -50, y = 0 },
 	{ key = "right", x = 50, y = 0 },
@@ -227,7 +266,7 @@ for _, map in ipairs(resize_maps) do
 end
 
 -- --- Layout Controls ---
-hl.bind(mainMod .. " + SHIFT + l", function()
+hl.bind(mainMod .. " + ALT + l", function()
 	local current = hl.get_config("general.layout")
 	if current == "dwindle" then
 		hl.config({ general = { layout = "scrolling" } })
@@ -247,10 +286,10 @@ hl.bind(mainMod .. " + c", hl.dsp.layout("centerview"))
 hl.bind(mainMod .. " + SHIFT + x", hl.dsp.layout("consume_or_expel"))
 
 -- --- Scratchpads & Groups ---
-hl.bind(mainMod .. " + t", toggle_drop)
+hl.bind(mainMod .. " + SHIFT + return", toggle_drop)
 hl.bind(mainMod .. " + F1", toggle_btop)
-hl.bind(mainMod .. " + s", hl.dsp.workspace.toggle_special("magic"))
-hl.bind(mainMod .. " + SHIFT + s", function()
+hl.bind(mainMod .. " + u", hl.dsp.workspace.toggle_special("magic"))
+hl.bind(mainMod .. " + SHIFT + u", function()
 	local w = hl.get_active_window()
 	if w == nil then
 		return
@@ -265,16 +304,17 @@ end)
 hl.bind(mainMod .. " + g", hl.dsp.group.toggle())
 hl.bind(mainMod .. " + bracketleft", hl.dsp.group.prev())
 hl.bind(mainMod .. " + bracketright", hl.dsp.group.next())
-hl.bind(mainMod .. " + SHIFT + g", hl.dsp.group.lock())
+hl.bind(mainMod .. " + CTRL + g", hl.dsp.group.lock())
 
 -- --- System, Media & Noctalia Panels ---
-hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(ipc .. " panel-toggle launcher"))
-hl.bind(mainMod .. " + v", hl.dsp.exec_cmd(ipc .. " panel-toggle clipboard"))
-hl.bind(mainMod .. " + Print", hl.dsp.exec_cmd(ipc .. " screenshot-region"))
-hl.bind(mainMod .. " + SHIFT + Print", hl.dsp.exec_cmd(ipc .. " screenshot-fullscreen"))
-hl.bind(mainMod .. " + l", hl.dsp.exec_cmd(ipc .. " session lock"))
-hl.bind(mainMod .. " + CTRL + l", hl.dsp.exec_cmd(ipc .. " session logout"))
-hl.bind(mainMod .. " + p", hl.dsp.exec_cmd(ipc .. " panel-toggle control-center"))
+hl.bind(mainMod .. " + ALT + v", hl.dsp.exec_cmd(ipc .. " panel-toggle clipboard"))
+hl.bind(mainMod .. " + Print", hl.dsp.exec_cmd(ipc .. " screenshot-fullscreen"))
+hl.bind(mainMod .. " + SHIFT + Print", hl.dsp.exec_cmd(ipc .. " screenshot-region"))
+hl.bind("ALT + Print", hl.dsp.exec_cmd(ipc .. " screenshot-fullscreen pick"))
+hl.bind("CTRL + ALT + l", hl.dsp.exec_cmd(ipc .. " session lock"))
+hl.bind("CTRL + ALT + delete", hl.dsp.exec_raw("hyprctl dispatch exit"))
+hl.bind("CTRL + ALT + p", hl.dsp.exec_cmd(ipc .. " panel-toggle session"))
+hl.bind(mainMod .. " + SHIFT + n", hl.dsp.exec_cmd(ipc .. " panel-toggle notifications"))
 hl.bind(mainMod .. " + F2", hl.dsp.exec_cmd(ipc .. " mic-mute"))
 
 -- --- Noctalia System Controls ---
@@ -282,6 +322,46 @@ hl.bind(mainMod .. " + n", hl.dsp.exec_cmd(ipc .. " nightlight-toggle"))
 hl.bind(mainMod .. " + y", hl.dsp.exec_cmd(ipc .. " caffeine-toggle"))
 hl.bind(mainMod .. " + w", hl.dsp.exec_cmd(ipc .. " wallpaper-random"))
 hl.bind(mainMod .. " + SHIFT + t", hl.dsp.exec_cmd(ipc .. " theme-mode-toggle"))
+
+-- --- Extra Features via Lua ---
+hl.bind(mainMod .. " + ALT + o", function()
+	local current = hl.get_config("decoration.blur.enabled")
+	hl.config({ decoration = { blur = { enabled = not current } } })
+end)
+
+local gamemode_active = false
+hl.bind(mainMod .. " + SHIFT + g", function()
+	gamemode_active = not gamemode_active
+	if gamemode_active then
+		hl.config({
+			animations = { enabled = false },
+			decoration = {
+				blur = { enabled = false },
+				shadow = { enabled = false },
+			},
+			general = {
+				gaps_in = 0,
+				gaps_out = 0,
+			}
+		})
+		hl.exec_cmd("notify-send 'Modo Jogo Ativado' -t 2000")
+	else
+		hl.config({
+			animations = { enabled = true },
+			decoration = {
+				blur = { enabled = true },
+				shadow = { enabled = true },
+			},
+			general = {
+				gaps_in = 5,
+				gaps_out = 5,
+			}
+		})
+		hl.exec_cmd("notify-send 'Modo Jogo Desativado' -t 2000")
+	end
+end)
+
+hl.bind(mainMod .. " + CTRL + o", hl.dsp.exec_raw("hyprctl dispatch toggleopaque"))
 
 -- --- Hardware & Media Keys ---
 hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd(ipc .. " volume-up"))
@@ -306,4 +386,5 @@ hl.on("hyprland.start", function()
 	hl.exec_cmd("gnome-keyring-daemon --start --components=secrets")
 	hl.exec_cmd("noctalia")
 	hl.exec_cmd("wl-paste --watch cliphist store")
+	hl.exec_cmd("snappy-switcher --daemon")
 end)
