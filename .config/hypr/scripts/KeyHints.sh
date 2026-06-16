@@ -1,90 +1,96 @@
 #!/usr/bin/env bash
-# /* ---- Custom Keybinds Cheat Sheet ---- */
+# /* ---- Custom Keybinds Cheat Sheet using FZF ---- */
 
-# Toggle behavior: if yad is already running, kill it and exit
-if pidof yad > /dev/null; then
-  pkill yad
-  exit 0
+# Toggle behavior: if fzf keyhints terminal is already running, we don't spawn another
+# (Hyprland handles focusing, but this is a safeguard)
+
+# Define shortcuts array
+shortcuts=(
+  "App Launchers :: SUPER + Return :: Open Terminal :: kitty"
+  "App Launchers :: SUPER + B :: Launch Browser :: firefox"
+  "App Launchers :: SUPER + E :: File Manager (Yazi) :: kitty -e yazi"
+  "App Launchers :: SUPER + D :: App Launcher :: noctalia msg panel-toggle launcher"
+  "App Launchers :: SUPER + V :: Clipboard Manager :: noctalia msg panel-toggle clipboard"
+  "App Launchers :: SUPER + P :: Control Center / Audio :: noctalia msg panel-toggle session"
+  "App Launchers :: SUPER + SHIFT + E :: Noctalia Settings :: noctalia msg settings-toggle"
+  "App Launchers :: SUPER + SHIFT + N :: Notification Panel :: noctalia msg panel-toggle notifications"
+  "App Launchers :: SUPER + SHIFT + D :: Active Window Info :: /home/gsouza/.config/hypr/scripts/WindowInfo.sh"
+  
+  "Session Control :: CTRL + ALT + L :: Lock Screen :: noctalia msg session lock"
+  "Session Control :: CTRL + ALT + P :: Logout Menu :: noctalia msg panel-toggle session"
+  "Session Control :: CTRL + ALT + Del :: Exit Hyprland Session :: hyprctl dispatch exit"
+  
+  "Window Management :: SUPER + Q / ALT + F4 :: Close Window :: hyprctl dispatch closewindow"
+  "Window Management :: SUPER + SHIFT + Q :: Kill/Force Terminate Window :: hyprctl dispatch killactive"
+  "Window Management :: SUPER + SHIFT + F :: Toggle Fullscreen :: hyprctl dispatch fullscreen 0"
+  "Window Management :: SUPER + M :: Toggle Maximized :: hyprctl dispatch fullscreen 1"
+  "Window Management :: SUPER + Space :: Toggle Float :: hyprctl dispatch togglefloating"
+  "Window Management :: SUPER + ALT + Space :: Float All Windows in Workspace :: float all windows"
+  "Window Management :: SUPER + O :: Float & Pin Window (Sticky) :: hyprctl dispatch pin"
+  "Window Management :: SUPER + SHIFT + I :: Toggle Split Layout :: hyprctl dispatch togglesplit"
+  "Window Management :: SUPER + G :: Toggle Window Group (Tabs) :: hyprctl dispatch togglegroup"
+  "Window Management :: SUPER + [ or ] :: Cycle Group Windows :: hyprctl dispatch changegroupactive f/b"
+  "Window Management :: SUPER + CTRL + G :: Lock Group :: hyprctl dispatch lockactivegroup toggle"
+  
+  "Navigation :: SUPER + Arrow Keys :: Move Focus :: hyprctl dispatch movefocus l/r/u/d"
+  "Navigation :: SUPER + SHIFT + Arrow Keys :: Resize Active Window :: hyprctl dispatch resizeactive"
+  "Navigation :: SUPER + CTRL + Arrow Keys :: Move Window :: hyprctl dispatch movewindow l/r/u/d"
+  "Navigation :: SUPER + [0-9] :: Switch to Workspace [1-10] :: hyprctl dispatch workspace [1-10]"
+  "Navigation :: SUPER + SHIFT + [0-9] :: Move Window to Workspace :: hyprctl dispatch movetoworkspace [1-10]"
+  "Navigation :: SUPER + CTRL + [0-9] :: Move Window Silently to Workspace :: hyprctl dispatch movetoworkspacesilent [1-10]"
+  "Navigation :: SUPER + TAB / SHIFT + TAB :: Next/Prev Workspace :: hyprctl dispatch workspace e+/-1"
+  "Navigation :: SUPER + Mouse Scroll :: Next/Prev Workspace :: hyprctl dispatch workspace e+/-1"
+  "Navigation :: ALT + TAB :: Window Switcher :: snappy-switcher"
+  
+  "Noctalia Features :: SUPER + N :: Toggle Night Light :: noctalia msg nightlight-toggle"
+  "Noctalia Features :: SUPER + Y :: Toggle Caffeine (No Sleep) :: noctalia msg caffeine-toggle"
+  "Noctalia Features :: SUPER + W :: Random Wallpaper :: noctalia msg wallpaper-random"
+  "Noctalia Features :: SUPER + SHIFT + T :: Toggle Dark/Light Theme :: noctalia msg theme-mode-toggle"
+  "Noctalia Features :: SUPER + ALT + O :: Toggle Screen Blur :: toggle blur"
+  "Noctalia Features :: SUPER + SHIFT + G :: Toggle Gamemode :: toggle animations & gaps"
+  "Noctalia Features :: SUPER + CTRL + O :: Toggle Active Window Opacity :: hyprctl dispatch toggleopaque"
+  
+  "Scratchpads :: SUPER + SHIFT + Enter :: Toggle Dropdown Terminal :: kitty-drop"
+  "Scratchpads :: SUPER + F1 :: Toggle btop Monitor :: btop-scratch"
+  "Scratchpads :: SUPER + U :: Toggle Special Workspace :: hyprctl dispatch togglespecialworkspace magic"
+  "Scratchpads :: SUPER + SHIFT + U :: Move Window to Special Workspace :: hyprctl dispatch movetoworkspace special:magic"
+  
+  "Media & Hardware :: SUPER + Print :: Screenshot Fullscreen :: noctalia msg screenshot-fullscreen"
+  "Media & Hardware :: SUPER + SHIFT + Print :: Screenshot Region :: noctalia msg screenshot-region"
+  "Media & Hardware :: ALT + Print :: Screenshot Active Window :: noctalia msg screenshot-fullscreen pick"
+  "Media & Hardware :: Volume/Brightness Keys :: Volume/Brightness controls :: noctalia volume/brightness"
+  "Media & Hardware :: Play/Pause/Next/Prev :: Media controls :: noctalia msg media toggle/next/prev"
+  "Media & Hardware :: SUPER + F2 :: Toggle Microphone Mute :: noctalia msg mic-mute"
+  
+  "Help Cheatsheets :: SUPER + H :: Show Hyprland Cheat Sheet :: KeyHints.sh"
+  "Help Cheatsheets :: SUPER + SHIFT + H :: Show Zsh/Nix Cheat Sheet :: AliasHints.sh"
+)
+
+# Pipe array through column formatting and into FZF
+# FZF will hide the Action field but return it on selection
+selected=$(printf "%s\n" "${shortcuts[@]}" | column -t -s '::' | \
+  fzf --header=" [ ENTER: Copiar comando para o clipboard | ESC: Sair ]" \
+      --layout=reverse \
+      --border=rounded \
+      --prompt="🔍 Pesquisar atalho: ")
+
+if [[ -n "$selected" ]]; then
+  # Parse the selected line to find the original shortcut item to extract the action
+  # We do this by searching for the matching category/shortcut/description in our original array
+  # Extract the text without leading/trailing whitespace
+  selected_trimmed=$(echo "$selected" | xargs)
+  
+  for item in "${shortcuts[@]}"; do
+    # Format the item the same way column does to find the match
+    item_formatted=$(echo "$item" | sed 's/ :: /   /g' | xargs)
+    # Check if the prefix matches
+    if [[ "$selected_trimmed" == "$item_formatted"* ]]; then
+      action=$(echo "$item" | awk -F ' :: ' '{print $4}')
+      if [[ -n "$action" ]]; then
+        echo -n "$action" | wl-copy
+        notify-send "Atalho Copiado" "Comando '$action' copiado para o clipboard!" -t 2000 -i edit-copy
+      fi
+      break
+    fi
+  done
 fi
-
-# Use YAD with name yad-keyhints to match Hyprland window rules
-yad --center \
-    --name="yad-keyhints" \
-    --title="Noctalia & Hyprland Quick Cheat Sheet" \
-    --no-buttons \
-    --list \
-    --column="Key:" \
-    --column="Description:" \
-    --column="Command:" \
-    --width=1000 --height=650 \
-    "ESC" "Close this Cheat Sheet" "" \
-    "SUPER KEY" "Main Modifier" "(Windows Key)" \
-    "" "" "" \
-    "SUPER + Return" "Open Terminal" "kitty" \
-    "SUPER + B" "Launch Browser" "firefox" \
-    "SUPER + E" "File Manager" "kitty -e yazi" \
-    "SUPER + D" "App Launcher" "Noctalia launcher" \
-    "SUPER + V" "Clipboard Manager" "Noctalia clipboard" \
-    "SUPER + P" "Control Center / Audio" "Noctalia CC" \
-    "SUPER + SHIFT + E" "Noctalia Settings" "Noctalia Settings" \
-    "SUPER + SHIFT + N" "Notification Panel" "Noctalia Notifications" \
-    "SUPER + SHIFT + D" "Window Info (Active)" "WindowInfo.sh" \
-    "CTRL + ALT + L" "Lock screen" "Noctalia lock screen" \
-    "CTRL + ALT + P" "Session Logout Menu" "Noctalia Logout" \
-    "CTRL + ALT + Del" "Exit Hyprland Session" "exit" \
-    "SUPER + Q / ALT + F4" "Close active window" "close" \
-    "SUPER + SHIFT + Q" "Terminate active window" "kill" \
-    "" "" "" \
-    "SUPER + SHIFT + F" "Fullscreen" "Toggle fullscreen" \
-    "SUPER + M" "Maximize" "Toggle maximized" \
-    "SUPER + Space" "Float Toggle" "Toggle floating window" \
-    "SUPER + ALT + Space" "Float All Windows" "float all" \
-    "SUPER + O" "Float & Pin Window" "Float + Pin window" \
-    "SUPER + SHIFT + I" "Toggle Split" "togglesplit" \
-    "SUPER + G" "Toggle Group (Tabs)" "togglesgroup" \
-    "SUPER + [ / ]" "Cycle Group Windows" "prev / next tab" \
-    "SUPER + CTRL + G" "Lock Group" "lock active group" \
-    "" "" "" \
-    "SUPER + Left/Right/Up/Down" "Focus Window" "movefocus" \
-    "SUPER + SHIFT + Left/Right/Up/Down" "Resize Window" "resize" \
-    "SUPER + CTRL + Left/Right/Up/Down" "Move Window" "movewindow" \
-    "SUPER + [0-9]" "Focus Workspace [1-10]" "workspace [1-10]" \
-    "SUPER + SHIFT + [0-9]" "Move Window to Workspace" "movetoworkspace" \
-    "SUPER + CTRL + [0-9]" "Move Window Silently to Workspace" "movetoworkspacesilent" \
-    "SUPER + TAB / SHIFT + TAB" "Next / Prev Workspace" "workspace e+/-1" \
-    "SUPER + Mouse Scroll" "Next / Prev Workspace" "workspace e+/-1" \
-    "ALT + TAB" "Window Switcher" "Snappy Switcher" \
-    "" "" "" \
-    "SUPER + N" "Toggle Night Light (Azul)" "Noctalia nightlight" \
-    "SUPER + Y" "Toggle Caffeine (Idle Inhibitor)" "Noctalia caffeine" \
-    "SUPER + W" "Random Wallpaper" "Noctalia wallpaper" \
-    "SUPER + SHIFT + T" "Toggle Dark/Light Theme" "Noctalia theme" \
-    "SUPER + ALT + O" "Toggle Blur" "toggle blur" \
-    "SUPER + SHIFT + G" "Toggle Gamemode" "toggle animations" \
-    "SUPER + CTRL + O" "Toggle Opacity" "toggle opaque" \
-    "" "" "" \
-    "SUPER + = / -" "Resize Width (+/- 50)" "resize width" \
-    "SUPER + SHIFT + = / -" "Resize Height (+/- 50)" "resize height" \
-    "SUPER + ALT + Arrow keys" "Resize Window" "resizeactive" \
-    "" "" "" \
-    "SUPER + ALT + L" "Toggle Layout" "Dwindle / Scrolling" \
-    "SUPER + period" "Move window to col (scrolling)" "move +col" \
-    "SUPER + comma" "Swap column (scrolling)" "swapcol l" \
-    "SUPER + SHIFT + period" "Resize column + (scrolling)" "colresize +conf" \
-    "SUPER + SHIFT + comma" "Resize column - (scrolling)" "colresize -conf" \
-    "SUPER + C" "Center View (scrolling)" "centerview" \
-    "SUPER + SHIFT + X" "Consume/Expel window (scrolling)" "consume_or_expel" \
-    "" "" "" \
-    "SUPER + SHIFT + Enter" "Toggle Dropdown Terminal" "kitty-drop" \
-    "SUPER + F1" "Toggle btop" "btop-scratch" \
-    "SUPER + U" "Toggle special workspace" "special:magic" \
-    "SUPER + SHIFT + U" "Move window to special workspace" "special:magic" \
-    "" "" "" \
-    "SUPER + Print" "Screenshot Fullscreen" "Noctalia screenshot" \
-    "SUPER + SHIFT + Print" "Screenshot Region" "Noctalia screenshot" \
-    "ALT + Print" "Screenshot Active Window" "Noctalia screenshot" \
-    "Volume / Brightness Keys" "Media Controls" "Noctalia volume/brightness" \
-    "Media Play / Pause / Next / Prev" "Media Playback" "Noctalia media" \
-    "SUPER + F2" "Toggle Microphone Mute" "Noctalia mic-mute" \
-    "SUPER + H" "Show Hyprland Cheat Sheet" "KeyHints.sh" \
-    "SUPER + SHIFT + H" "Show Zsh/Nix Cheat Sheet" "AliasHints.sh"

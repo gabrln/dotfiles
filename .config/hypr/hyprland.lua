@@ -101,7 +101,7 @@ hl.layer_rule({
 })
 
 hl.window_rule({
-	match = { class = "yad-keyhints" },
+	match = { class = "floating-keyhints" },
 	float = true,
 	size = { 1000, 650 },
 	center = true,
@@ -165,8 +165,8 @@ local scriptsDir = "/home/gsouza/.config/hypr/scripts"
 -- --- Application Launchers ---
 hl.bind(mainMod .. " + return", hl.dsp.exec_raw("kitty --title Kitty"))
 hl.bind(mainMod .. " + b", hl.dsp.exec_cmd(browser))
-hl.bind(mainMod .. " + h", hl.dsp.exec_cmd(scriptsDir .. "/KeyHints.sh"))
-hl.bind(mainMod .. " + SHIFT + h", hl.dsp.exec_cmd(scriptsDir .. "/AliasHints.sh"))
+hl.bind(mainMod .. " + h", hl.dsp.exec_raw("kitty --class floating-keyhints -e " .. scriptsDir .. "/KeyHints.sh"))
+hl.bind(mainMod .. " + SHIFT + h", hl.dsp.exec_raw("kitty --class floating-keyhints -e " .. scriptsDir .. "/AliasHints.sh"))
 hl.bind(mainMod .. " + d", hl.dsp.exec_cmd(ipc .. " panel-toggle launcher"))
 hl.bind(mainMod .. " + SHIFT + e", hl.dsp.exec_cmd(ipc .. " settings-toggle"))
 hl.bind(mainMod .. " + e", hl.dsp.exec_raw("kitty -e yazi"))
