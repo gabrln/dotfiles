@@ -312,7 +312,7 @@ hl.bind(mainMod .. " + bracketright", hl.dsp.group.next())
 hl.bind(mainMod .. " + CTRL + g", hl.dsp.group.lock())
 
 -- --- System, Media & Noctalia Panels ---
-hl.bind(mainMod .. " + ALT + v", hl.dsp.exec_cmd(ipc .. " panel-toggle clipboard"))
+hl.bind(mainMod .. " + v", hl.dsp.exec_cmd(ipc .. " panel-toggle clipboard"))
 hl.bind(mainMod .. " + Print", hl.dsp.exec_cmd(ipc .. " screenshot-fullscreen"))
 hl.bind(mainMod .. " + SHIFT + Print", hl.dsp.exec_cmd(ipc .. " screenshot-region"))
 hl.bind("ALT + Print", hl.dsp.exec_cmd(ipc .. " screenshot-fullscreen pick"))
