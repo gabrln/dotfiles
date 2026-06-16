@@ -182,8 +182,13 @@ hl.bind(mainMod .. " + space", function()
 	if w.floating then
 		hl.dispatch(hl.dsp.window.float({ action = "toggle" }))
 	else
+		if w.fullscreen ~= 0 then
+			hl.dispatch(hl.dsp.window.fullscreen({ mode = "fullscreen", action = "unset" }))
+			hl.dispatch(hl.dsp.window.fullscreen({ mode = "maximized", action = "unset" }))
+		end
 		hl.dispatch(hl.dsp.window.float({ action = "toggle" }))
-		hl.exec_cmd("hyprctl --batch 'dispatch resizeactive exact 1200 800 ; dispatch centerwindow'")
+		hl.dispatch(hl.dsp.window.resize({ x = 1200, y = 800, relative = false }))
+		hl.dispatch(hl.dsp.window.center())
 	end
 end)
 hl.bind(mainMod .. " + ALT + space", function()
