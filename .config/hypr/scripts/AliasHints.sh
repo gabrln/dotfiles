@@ -35,6 +35,11 @@ yad_args=(
   "Zsh" "y" "Open Yazi (cd on exit)" "yazi wrapper function"
   "Zsh" "zj" "Zellij multiplexer" "zellij"
   
+  "FZF" "Ctrl + R" "Fuzzy search command history" "fzf history widget"
+  "FZF" "Ctrl + F" "Fuzzy search files (no hidden)" "fzf file picker"
+  "FZF" "Ctrl + T" "Fuzzy search files (with hidden)" "fzf Ctrl+T picker"
+  "FZF" "Alt + C" "Fuzzy search directories and auto-cd" "fzf cd widget"
+  
   "Config" "conf-hypr" "Edit Hyprland config" "nvim ~/.config/hypr/hyprland.lua"
   "Config" "conf-zsh" "Edit Zsh config" "nvim ~/.config/zsh/.zshrc"
   "Config" "conf-zj" "Edit Zellij config" "nvim ~/.config/zellij/config.kdl"
