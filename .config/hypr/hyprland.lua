@@ -174,7 +174,50 @@ hl.bind(mainMod .. " + SHIFT + d", hl.dsp.exec_cmd(scriptsDir .. "/WindowInfo.sh
 
 -- --- Window Management ---
 hl.bind(mainMod .. " + q", hl.dsp.window.close(), { repeating = true })
-hl.bind("ALT + F4", hl.dsp.window.close(), { repeating = true })
+
+local protected_processes = {
+	["noctalia"] = true,
+	["hyprland"] = true,
+	["systemd"] = true,
+	["udevd"] = true,
+	["dbus-daemon"] = true,
+	["polkitd"] = true,
+	["pipewire"] = true,
+	["wireplumber"] = true,
+	["waybar"] = true,
+}
+
+hl.bind("ALT + F4", function()
+	local w = hl.get_active_window()
+	if w and w.pid then
+		-- 1. Validar pelas classes de janela do Hyprland
+		local class = (w.class or ""):lower()
+		local initialClass = (w.initialClass or ""):lower()
+		if class:find("noctalia") or initialClass:find("noctalia") or class:find("hyprland") then
+			hl.exec_cmd("notify-send 'Ação Bloqueada' 'Não é permitido encerrar o Noctalia ou Hyprland!' -u critical -t 3000")
+			return
+		end
+
+		-- 2. Validar pelo executável lido no /proc/<pid>/comm
+		local f = io.open("/proc/" .. w.pid .. "/comm", "r")
+		if f then
+			local comm = f:read("*l")
+			f:close()
+			if comm then
+				comm = comm:lower():gsub("%s+", "")
+				if protected_processes[comm] or comm:find("noctalia") or comm:find("hyprland") then
+					hl.exec_cmd("notify-send 'Ação Bloqueada' 'Não é permitido encerrar o processo protegido: " .. comm .. "' -u critical -t 3000")
+					return
+				end
+			end
+		end
+
+		-- 3. Executar encerramento agressivo
+		hl.exec_cmd("kill -9 " .. w.pid)
+		hl.exec_cmd("notify-send 'Processo Encerrado' 'Janela encerrada agressivamente (PID: " .. w.pid .. ")' -t 2000")
+	end
+end)
+
 hl.bind(mainMod .. " + SHIFT + q", hl.dsp.window.kill())
 hl.bind(mainMod .. " + SHIFT + f", hl.dsp.window.fullscreen({ mode = "fullscreen", action = "toggle" }))
 hl.bind(mainMod .. " + m", hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" }))
@@ -286,11 +329,14 @@ end)
 
 -- Scrolling Layout Specifics
 hl.bind(mainMod .. " + period", hl.dsp.layout("move +col"))
-hl.bind(mainMod .. " + comma", hl.dsp.layout("swapcol l"))
-hl.bind(mainMod .. " + SHIFT + period", hl.dsp.layout("colresize +conf"))
-hl.bind(mainMod .. " + SHIFT + comma", hl.dsp.layout("colresize -conf"))
+hl.bind(mainMod .. " + comma", hl.dsp.layout("move -col"))
+hl.bind(mainMod .. " + SHIFT + period", hl.dsp.layout("swapcol r"))
+hl.bind(mainMod .. " + SHIFT + comma", hl.dsp.layout("swapcol l"))
+hl.bind(mainMod .. " + ALT + period", hl.dsp.layout("colresize +conf"))
+hl.bind(mainMod .. " + ALT + comma", hl.dsp.layout("colresize -conf"))
 hl.bind(mainMod .. " + c", hl.dsp.layout("centerview"))
 hl.bind(mainMod .. " + SHIFT + x", hl.dsp.layout("consume_or_expel"))
+hl.bind(mainMod .. " + SHIFT + p", hl.dsp.layout("promote"))
 
 -- --- Scratchpads & Groups ---
 hl.bind(mainMod .. " + SHIFT + return", toggle_drop)
@@ -321,7 +367,7 @@ hl.bind("ALT + Print", hl.dsp.exec_cmd(ipc .. " screenshot-fullscreen pick"))
 hl.bind("CTRL + ALT + l", hl.dsp.exec_cmd(ipc .. " session lock"))
 hl.bind("CTRL + ALT + delete", hl.dsp.exec_raw("hyprctl dispatch exit"))
 hl.bind("CTRL + ALT + p", hl.dsp.exec_cmd(ipc .. " panel-toggle session"))
-hl.bind(mainMod .. " + SHIFT + n", hl.dsp.exec_cmd(ipc .. " panel-toggle notifications"))
+hl.bind(mainMod .. " + SHIFT + n", hl.dsp.exec_cmd(ipc .. " panel-toggle control-center notifications"))
 hl.bind(mainMod .. " + F2", hl.dsp.exec_cmd(ipc .. " mic-mute"))
 
 -- --- Noctalia System Controls ---
