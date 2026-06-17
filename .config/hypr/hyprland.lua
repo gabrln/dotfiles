@@ -12,7 +12,7 @@ require("noctalia")
 -- -----------------------------------------------------------------------------
 local env_variables = {
 	LIBVA_DRIVER_NAME = "iHD",
-	GBM_BACKEND = "drimod",
+	GBM_BACKEND = "drm",
 	__GLX_VENDOR_LIBRARY_NAME = "mesa",
 	QT_QPA_PLATFORM = "wayland;xcb",
 	ELECTRON_OZONE_PLATFORM_HINT = "wayland",
